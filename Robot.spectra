@@ -1,0 +1,101 @@
+import "./imports/DwyerPatternsNamed.spectra"
+
+spec Robot
+
+//define NumObstacles := 5;
+define DX := 4;
+define DY := 4;
+
+
+type DimX = Int(0..DX);
+type DimY = Int(0..DY);
+
+env  DimX targetAX;
+env  DimY targetAY;
+env  DimX targetBX;
+env  DimY targetBY;
+env  DimX targetCX;
+env  DimY targetCY;
+
+
+sys boolean VisitedA ;
+sys boolean VisitedB ;
+sys boolean VisitedC ;
+sys boolean VisitedStartPos;
+
+sys DimX robotX;
+sys DimY robotY;
+//sys {UP, DOWN, LEFT, RIGHT, STAY} move;
+
+define AtTargetA := (robotX = targetAX) &  (robotY = targetAY);
+define AtTargetB := robotX = targetBX &  robotY = targetBY;
+define AtTargetC := robotX = targetCX &  robotY = targetCY;
+
+
+//define VisitedA := false;
+//define VisitedB := false;
+//define VisitedC := false;
+//define VisitedStartPos := true;
+
+gar alwEv (VisitedA = true );
+gar (AtTargetA & VisitedStartPos)-> VisitedA=true;
+
+
+
+
+predicate moveRobotX(DimX pos):
+  pos+1 = next(pos) |
+  pos   = next(pos) |
+  pos-1 = next(pos);
+  
+predicate moveRobotY(DimY pos):
+  pos+1 = next(pos) |
+  pos   = next(pos) |
+  pos-1 = next(pos);
+  
+
+ 
+ //No target is at [0,0]
+asm  ((targetAX=0&targetAY=0) | (targetBX=0&targetBY=0)| (targetCX =0&targetCY =0)) = false;
+
+//targets at different locations
+asm ((targetAX != targetBX) & (targetAY != targetBY )) & ((targetAX != targetCX) & (targetAY != targetCY )) &((targetCX != targetBX) & (targetCY != targetBY ));
+
+   
+gar robotMovesAtMostOne:
+G moveRobotX(robotX) & moveRobotY(robotY);
+
+////Robot starts on [0,0]
+gar  ini robotX =0 & robotY =0;
+
+
+//initialized to never visited
+gar ini (VisitedA | VisitedB | VisitedC) = false;
+
+//Avoid obstacles
+gar alw robotY = 1 implies robotX !=1 &  robotX !=2;
+gar alw robotY = 3 implies robotX !=0 &  robotX !=3;
+gar alw robotY = 4 implies robotX !=3;
+//Not exit board
+gar alw robotY < 5 & robotX<5;
+
+
+//Visiting a target sets the VisitedX flag to true only if it visited the starting position beforehand. 
+gar (AtTargetA & VisitedStartPos)-> VisitedA=true;
+gar (AtTargetB  & VisitedStartPos) -> VisitedB=true;
+gar (AtTargetC  & VisitedStartPos) -> VisitedC=true;
+
+//Always eventually visits all targets
+gar alwEv VisitedA;// & VisitedB & VisitedC;
+
+//gar alw robotX=4 & robotY=4 implies (next(robotX)=4 & next(robotY)=4);
+//Visiting the [0,0] sets the flag of visited to true
+gar (robotX =0 & robotY =0) -> VisitedStartPos=true;
+
+
+
+//Always Visiting all targets -> Starts a new round
+gar alw VisitedA & VisitedB & VisitedC -> (next(VisitedA) =false & next(VisitedB) =false & next(VisitedC) =false);
+//Must return to starting position after visiting each target - Visiting a target implies it should go to starting position
+gar alw (AtTargetA | AtTargetB | AtTargetC)-> VisitedStartPos = false;
+
