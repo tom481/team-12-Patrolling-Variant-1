@@ -37,8 +37,8 @@ define AtTargetC := robotX = targetCX &  robotY = targetCY;
 //define VisitedC := false;
 //define VisitedStartPos := true;
 
-gar alwEv (VisitedA = true );
-gar (AtTargetA & VisitedStartPos)-> VisitedA=true;
+//gar alwEv (VisitedA = true );
+//gar (AtTargetA & VisitedStartPos)-> VisitedA=true;
 
 
 
@@ -86,7 +86,7 @@ gar (AtTargetB  & VisitedStartPos) -> VisitedB=true;
 gar (AtTargetC  & VisitedStartPos) -> VisitedC=true;
 
 //Always eventually visits all targets
-gar alwEv VisitedA;// & VisitedB & VisitedC;
+gar alwEv VisitedA & VisitedB & VisitedC;
 
 //gar alw robotX=4 & robotY=4 implies (next(robotX)=4 & next(robotY)=4);
 //Visiting the [0,0] sets the flag of visited to true

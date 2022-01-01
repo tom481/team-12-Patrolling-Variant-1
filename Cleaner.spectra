@@ -1,0 +1,224 @@
+import "./imports/DwyerPatternsNamed.spectra"
+
+spec Cleaner
+
+ 
+define DX := 7;
+define DY := 7;
+define AtTarget := (robotX = targetX) &  (robotY = targetY);
+define AtOrangeZone2 := ((robotY =0 | robotY =2 |robotY =3 |robotY =5|robotY =6)&(robotX>=1 & robotX<=5));
+
+define At00 := robotX=0 & robotY=0;
+
+//All Possible movements- {(X+1,Y), (X-1,Y),(X,Y+1),(X,Y-1), (X,Y)}
+predicate moveRobot(DimX posX, DimY posY):
+  (posX+1 = next(posX) & posY  = next(posY))|
+  (posX-1 = next(posX) & posY  = next(posY))|
+   (posX = next(posX) & posY +1 = next(posY)) |
+    (posX = next(posX) & posY-1  = next(posY)) |
+      (posX = next(posX) & posY  = next(posY));
+      
+ 
+
+//We will specify a target that doesn't exist as a target which is on (DX+1,DY) ([8,7] in our example)
+type DimX = Int(0..(DX));
+type DimY = Int(0..DY);
+ 
+sys DimX robotX;
+sys DimY robotY;
+sys DimX[12] obstaclesX; 
+sys DimY[12] obstaclesY;
+//SysVar that indicates the amount of trash in tank 
+sys boolean fullTank;
+sys {UP, LEFT, DOWN, RIGHT} robotRotation;
+
+sys boolean cleaned;
+env boolean greenLight;
+env boolean emptied;
+
+env DimX targetX;
+env DimY targetY;
+//While a cleaning request is true the robot must go and clean. While the cleaning request is false the robot must stay
+env boolean cleaningRequest;
+
+asm alwEv greenLight;
+asm alwEv emptied;
+
+asm alwEv !greenLight;
+
+// *********************************************
+// ***      General Task Requirements        ***
+// *********************************************
+
+//Make sure always eventually a target would appear on the grid
+//asm alwEv targetX <(DX+1);
+
+//Target is not moving unless cleaned
+asm alw (!cleaned) -> next(targetX) = targetX & next(targetY) = targetY; 
+
+//Assume there are 12 obstacles and are located as illustrated in the assignment
+//asm ini obstaclesX = [1,1,1,1,1,4,4,4,4,4,7,7] ;
+//asm ini obstaclesY = [1,2,3,4,5,1,2,3,4,5,1,4] ;
+
+//assume AlwEv a cleaning request will be granted
+//asm alwEv cleaningRequest;
+
+//asm alw cleaningRequest &next(cleaningRequest)|
+//cleaningRequest &next(!cleaningRequest) & AtTarget
+//Assume a target is not on an obstacle nor at (0,0)
+asm alw targetY = 1 implies (targetX =0 |  targetX >5);
+asm alw targetY = 4 implies (targetX =0 |  targetX >5);
+asm alw targetY = 7 implies (targetX !=1 &  targetX !=4);
+asm alw !(targetX =0&targetY =0);
+
+
+asm alwEv !cleaned;
+
+asm alwEv TurnsPassedOnTarget =0;
+asm alwEv TurnsPassedOnTarget =4;
+
+
+//The robot starts at 0,0 with empty tank
+gar ini robotX =0 & robotY =0 ;
+gar ini cleaned = false;
+/**Movement */
+//The robot always moves if a cleaning request was true last turn
+//gar alw cleaningRequest implies next(moveRobot(robotX, robotY));
+//gar alw !cleaningRequest implies next(robotX)=robotX & next(robotY)= robotY;
+gar alw moveRobot(robotX,robotY);
+
+/*
+gar alw !targetAIsRed & !next(targetAIsRed) |  
+!targetAIsRed & next (targetAIsRed) &  AtTargetA |
+targetAIsRed & next(targetAIsRed) & targetATurnsPassed<4 |
+targetAIsRed & !next(targetAIsRed) & targetATurnsPassed>=4;
+*/
+
+//The robot avoids obstacles
+gar alw robotY = 1 implies (robotX =0 |  robotX >5);
+gar alw robotY = 4 implies (robotX =0 |  robotX >5);
+gar alw robotY = 7 implies (robotX !=1 &  robotX !=4);
+
+//Always eventually visit targets and cleans it
+gar alwEv cleaned;
+//gar alwEv fullTank;
+
+
+
+
+// *********************************************
+// ***          Property #1                  ***
+// *********************************************
+//If in orange zone than next turn robot figure rotates right 90 degrees
+gar ini robotRotation = UP;
+gar alw (AtOrangeZone2 & robotRotation = UP) implies  next(robotRotation)= RIGHT;
+gar alw (AtOrangeZone2 & robotRotation = RIGHT )implies  next(robotRotation)= DOWN;
+gar alw (AtOrangeZone2 & robotRotation = DOWN) implies  next(robotRotation)= LEFT;
+gar alw ( AtOrangeZone2 & robotRotation = LEFT) implies  next(robotRotation)= UP;
+gar alw !AtOrangeZone2 -> next(robotRotation)= robotRotation;
+
+// *********************************************
+// ***          Property #2                  ***
+// *********************************************
+
+// After every 5 consecutive states in the orange zone, the robot should stay in place for at least 2 states and then wait for a “green light” before it continues to move.
+
+//Initialize a counter that is incremented if the robot is at the orange zone, resets when robot is on the white zone or after 7 states on the orange zone  
+counter TurnsPassedOnOrangeTiles(0..7) {
+// initially no turns passed on orange
+TurnsPassedOnOrangeTiles=0;
+// increment when on 
+inc: AtOrangeZone2;
+overflow:keep;
+// reset counter when goes back to white or when it finished its two turns wait after 5 consecutive orange turns
+reset: !AtOrangeZone2 ;
+}
+
+
+
+//if it is over 5 turns on orange tile than it must stay for two turns(which is validated by resetting the counter on 7)
+gar alw (TurnsPassedOnOrangeTiles>4 & TurnsPassedOnOrangeTiles<6)  implies (next(robotX) =robotX & next(robotY) =robotY);
+
+//If it waited for 2 steps, now we shall wait until a green light for the robot the move and reset counter 
+//gar alw TurnsPassedOnOrangeTiles>=6 &!greenLight implies (next(robotX) =robotX & next(robotY) =robotY) & TurnsPassedOnOrangeTiles=0;
+
+// *********************************************
+// ***          Property #3                  ***
+// *********************************************
+//Here when the robot is on a target it must wait for five turns until it can move
+
+//We create another counter that counts the turns on a target and it promises that for five turns the robot stays
+counter TurnsPassedOnTarget(0..7) {
+// initially no turns passed on orange
+TurnsPassedOnTarget=0;
+// increment when on 
+inc: AtTarget;
+// reset counter when goes back to white or when it finished its two turns wait after 5 consecutive orange turns
+reset: !AtTarget | TurnsPassedOnTarget = 7 ;
+overflow: keep;
+}
+
+
+//if it is less than 5 turns on target  tile than it must stay for five turns
+//gar alw TurnsPassedOnTarget<5 -> (next(robotX) =robotX & next(robotY) =robotY);
+//Visiting a target marks it as cleaned after 5 turns
+gar alw !cleaned & next(!cleaned) |  
+(!cleaned) & next (cleaned) &  TurnsPassedOnTarget=4 |
+cleaned & next(!cleaned) ;
+gar alw TurnsPassedOnTarget=5 |TurnsPassedOnTarget=4 implies AtTarget;
+
+
+
+// *********************************************
+// ***          Property #4                  ***
+// *********************************************
+
+//After cleaning 5 targets , it can't clean anything and goes to 0,0 for two states,
+// also sets the the fullTank to true
+
+gar trig ([!cleaned]*[cleaned][!cleaned]*){5} |=>
+([fullTank=true]); 
+gar trig ([!cleaned]*[cleaned][!cleaned]*){0,4} |=>
+([fullTank=false]);
+//
+//gar tank_is_full_after_it_is_filled_until_green_light_and_at_00:
+// alw P_is_false_after_Q_until_R(!fullTank, fullTank, greenLight & At00);
+
+//gar alw fullTank -> !cleaned;
+
+
+//gar alw !fullTank &next(!fullTank)|
+//!fullTank & next(fullTank) & 
+
+//gar alw !fullTank &next(!fullTank)| 
+//(!fullTank )
+//(fullTank & next(fullTank) & !greenLight)|
+//(fullTank & next(!fullTank) & greenLight & At00);
+
+
+// *********************************************
+// ***          Property #5                  ***
+// *********************************************
+
+//TODO: Implement
+
+// *********************************************
+// ***          Property #6                  ***
+// *********************************************
+
+
+//The robot should not move in the first 8 states of its execution. Then it should start moving only when there is “green light”. 
+counter TurnsPassedSinceBeginning(0..12) {
+// initially no turns passed on orange
+TurnsPassedSinceBeginning=0;
+// increment when on 
+inc: At00;
+// never reset the counter, keep value for ongoing program
+overflow: keep;
+}
+
+//If less than 8 turns than the beginning of the program the robot stays
+gar alw (TurnsPassedSinceBeginning<8 | !greenLight&At00 ) -> (next(robotX) =robotX & next(robotY) =robotY);
+//For the case where the robot is at 0,0 and waited more than 8 turns it will move only after a green light
+//gar ONCE( TurnsPassedSinceBeginning>=8 ) -> moveRobot(robotX,robotY);
+//gar ONCE( TurnsPassedSinceBeginning>=8 & greenLight) -> moveRobot(robotX,robotY);
