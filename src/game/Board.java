@@ -33,6 +33,7 @@ public class Board extends JPanel {
 	BufferedImage[] base_robot_images;
 	BufferedImage obstacle_image;
 	BufferedImage orange_image;
+	BufferedImage base_robot_image;
 
 	public Board(ControlPanel cp) {
 		super();
@@ -65,10 +66,30 @@ public class Board extends JPanel {
 
 			robots_images[i] = ImageIO.read(new File("img/Robot" + String.valueOf(i) + ".png"));
 		}
+		
+		
 	}
 
 	// Animate a transition (from robots_prev to robots)
 	public void animate() throws Exception {
+		/*
+		if(cp.fullTank)
+		{
+			base_robot_image = robots_images[3];
+		}
+		//If we are on the target and it is not yet cleaned nor full tank then we are cleaning it
+		else if(cp.trgts.get(0).getX() == cp.robots[0].x && cp.trgts.get(0).getY() == cp.robots[0].y &&!cp.cleaned )
+		{
+			base_robot_image = robots_images[1];
+
+		}
+		else
+		{
+			base_robot_image = robots_images[2];
+
+
+		}*/
+		
 		for (int i = 0; i < cp.num_robots; i++) {
 			int diff_x = cp.robots[i].getX() - cp.robots_prev[i].getX();
 			int diff_y = cp.robots[i].getY() - cp.robots_prev[i].getY();
@@ -201,7 +222,9 @@ public class Board extends JPanel {
 			}
 			// Draw robots
 			for (int i = 0; i < cp.num_robots; i++) {
-				if(cp.fullTank)
+				g2d.drawImage(robots_images[i], robots_graphics[i].getX(), robots_graphics[i].getY(), null);
+
+				/*if(cp.fullTank)
 				{
 				g2d.drawImage(robots_images[3], robots_graphics[i].getX(), robots_graphics[i].getY(), null);
 				}
@@ -215,6 +238,7 @@ public class Board extends JPanel {
 					g2d.drawImage(robots_images[2], robots_graphics[i].getX(), robots_graphics[i].getY(), null);
 
 				}
+				*/
 			}
 			
 		}

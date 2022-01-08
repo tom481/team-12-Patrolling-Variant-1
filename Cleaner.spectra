@@ -72,15 +72,15 @@ asm alw targetY = 7 implies (targetX !=1 &  targetX !=4);
 asm alw !(targetX =0&targetY =0);
 
 
-asm alwEv !cleaned;
+//asm alwEv !cleaned;
 
-asm alwEv TurnsPassedOnTarget =0;
-asm alwEv TurnsPassedOnTarget =4;
+//asm alwEv TurnsPassedOnTarget =0;
+//asm alwEv TurnsPassedOnTarget =4;
 
 
 //The robot starts at 0,0 with empty tank
 gar ini robotX =0 & robotY =0 ;
-gar ini cleaned = false;
+//gar ini cleaned = false;
 /**Movement */
 //The robot always moves if a cleaning request was true last turn
 //gar alw cleaningRequest implies next(moveRobot(robotX, robotY));
@@ -176,10 +176,14 @@ gar alw TurnsPassedOnTarget=5 |TurnsPassedOnTarget=4 implies AtTarget;
 //After cleaning 5 targets , it can't clean anything and goes to 0,0 for two states,
 // also sets the the fullTank to true
 
+
+/*
 gar trig ([!cleaned]*[cleaned][!cleaned]*){5} |=>
 ([fullTank=true]); 
 gar trig ([!cleaned]*[cleaned][!cleaned]*){0,4} |=>
 ([fullTank=false]);
+*/
+
 //
 //gar tank_is_full_after_it_is_filled_until_green_light_and_at_00:
 // alw P_is_false_after_Q_until_R(!fullTank, fullTank, greenLight & At00);
@@ -200,7 +204,6 @@ gar trig ([!cleaned]*[cleaned][!cleaned]*){0,4} |=>
 // ***          Property #5                  ***
 // *********************************************
 
-//TODO: Implement
 
 // *********************************************
 // ***          Property #6                  ***
